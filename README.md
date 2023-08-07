@@ -1,2 +1,6 @@
 # SDL Multiplayer Game
-Hello World! :D
+### Outline
+- Here is where we should put our game outline
+
+### Todo
+- Stuff we have to do
