@@ -1,6 +1,8 @@
 # SDL Multiplayer Game
-### Outline
-- Here is where we should put our game outline
+### Elevator Pitch
+- 
 
 ### Todo
 - Stuff we have to do
+
+### 
