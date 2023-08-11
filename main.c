@@ -1,4 +1,5 @@
 #include "SDL.h"
+#include "player.h"
 #include "SDL_events.h"
 #include "SDL_keycode.h"
 #include "SDL_rect.h"
@@ -7,13 +8,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
-// Player object
-typedef struct {
-    SDL_Rect hitbox;
-    float vx;
-    float vy;
-    uint32_t color;
-} Player;
+// Global Variables 
+bool running = true;
 
 Player p = {
     .hitbox.x = 100,
@@ -22,86 +18,56 @@ Player p = {
     .hitbox.h = 100,
     .vx = 0,
     .vy = 0,
-    .color = 0x00FF0088
+    .c = 0xFFFF00FF
 };
 
-void handle_keydown(SDL_Renderer * renderer, bool * running, SDL_Event event) {
+void handle_keydown(SDL_Renderer * renderer, SDL_Event event) {
     // Quit the game
-    if (event.key.keysym.sym == SDLK_q) {
-        (*running) = false;
-    }
-    
+    if (event.key.keysym.sym == SDLK_q) { running = false; }
+
     // Movement
-    if (event.key.keysym.sym == SDLK_UP) {
-        p.vy = -5;
-    }
-    if (event.key.keysym.sym == SDLK_DOWN) {
-        p.vy = 5;
-    }
-    if (event.key.keysym.sym == SDLK_LEFT) {
-        p.vx = -5;
-    }
-    if (event.key.keysym.sym == SDLK_RIGHT) {
-        p.vx = 5;
-    }
+    if (event.key.keysym.sym == SDLK_UP) { p.vy = -5; }
+    if (event.key.keysym.sym == SDLK_DOWN) { p.vy = 5; }
+    if (event.key.keysym.sym == SDLK_LEFT) { p.vx = -5; }
+    if (event.key.keysym.sym == SDLK_RIGHT) { p.vx = 5; }
 }
 
-void handle_keyup(SDL_Renderer * renderer, bool * running, SDL_Event event) {
+void handle_keyup(SDL_Renderer * renderer, SDL_Event event) {
     // Movement
-    if (event.key.keysym.sym == SDLK_UP) {
-        p.vy = 0;
-    }
-    if (event.key.keysym.sym == SDLK_DOWN) {
-        p.vy = 0;
-    }
-    if (event.key.keysym.sym == SDLK_LEFT) {
-        p.vx = 0;
-    }
-    if (event.key.keysym.sym == SDLK_RIGHT) {
-        p.vx = 0;
-    }
+    if (event.key.keysym.sym == SDLK_UP) { p.vy = 0; }
+    if (event.key.keysym.sym == SDLK_DOWN) { p.vy = 0; }
+    if (event.key.keysym.sym == SDLK_LEFT) { p.vx = 0; }
+    if (event.key.keysym.sym == SDLK_RIGHT) { p.vx = 0; }
 }
 
 // Main game loop
 void loop(SDL_Renderer * renderer) {
+    // Clear the screen
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_RenderClear(renderer);
 
-    bool running = true;
-    while (running) {
-        // Clear the screen
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-        SDL_RenderClear(renderer);
-
-        // Event handling loop -- breaks when there
-        // are no more events to deal with
-        SDL_Event event;
-        while (SDL_PollEvent(&event)) {
-            switch (event.type) {
-                case SDL_KEYDOWN:
-                    handle_keydown(renderer, &running, event);
-                    break;
-                case SDL_KEYUP:
-                    handle_keyup(renderer, &running, event);
-                    break;
-                default:
-                    break;
-            }
+    // Event handling loop -- breaks when there
+    // are no more events to deal with
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        switch (event.type) {
+            case SDL_KEYDOWN:
+                handle_keydown(renderer, event);
+                break;
+            case SDL_KEYUP:
+                handle_keyup(renderer, event);
+                break;
+            default:
+                break;
         }
-
-        // Yes, I did do this fancy bit manipulation
-        // myself B) no biggie first try
-        uint32_t red = (p.color & 0xFF000000) >> 24;
-        uint32_t green = (p.color & 0x00FF0000) >> 16;
-        uint32_t blue = (p.color & 0x0000FF00) >> 8;
-        uint32_t alpha = (p.color & 0x000000FF);
-
-        p.hitbox.x += p.vx;
-        p.hitbox.y += p.vy;
-
-        // Draw the player
-        SDL_SetRenderDrawColor(renderer, red, green, blue, alpha);
-        SDL_RenderFillRect(renderer, &p.hitbox);
-        SDL_RenderPresent(renderer);
     }
+
+    update_player(&p);
+    
+    // Draw the player
+    SDL_SetRenderDrawColor(renderer, p.c.split.red, p.c.split.green, p.c.split.blue, p.c.split.alpha);
+    SDL_RenderFillRect(renderer, &p.hitbox);
+    SDL_RenderPresent(renderer);
 }
 
 int main() {
@@ -130,7 +96,9 @@ int main() {
     }
 
     // Event loop
-    loop(renderer);
+    while (running) {
+        loop(renderer);
+    }
 
     // Cleanup
     SDL_DestroyRenderer(renderer);

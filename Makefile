@@ -1,4 +1,4 @@
-SOURCE_FILES = main.c
+SOURCE_FILES = player.h main.c
 
 game: $(SOURCE_FILES)
 	cc $(SOURCE_FILES) `sdl2-config --cflags --libs` -o Game
