@@ -8,7 +8,6 @@
 #include <stdint.h>
 #include <stdio.h>
 
-// Global Variables 
 bool running = true;
 
 Player p = {
@@ -18,7 +17,7 @@ Player p = {
     .hitbox.h = 100,
     .vx = 0,
     .vy = 0,
-    .c = 0xFFFF00FF
+    .color = 0xFFFF00FF
 };
 
 void handle_keydown(SDL_Renderer * renderer, SDL_Event event) {
@@ -65,7 +64,7 @@ void loop(SDL_Renderer * renderer) {
     update_player(&p);
     
     // Draw the player
-    SDL_SetRenderDrawColor(renderer, p.c.split.red, p.c.split.green, p.c.split.blue, p.c.split.alpha);
+    SDL_SetRenderDrawColor(renderer, p.color.split.red, p.color.split.green, p.color.split.blue, p.color.split.alpha);
     SDL_RenderFillRect(renderer, &p.hitbox);
     SDL_RenderPresent(renderer);
 }
@@ -95,7 +94,7 @@ int main() {
         return 1;
     }
 
-    // Event loop
+    // Game loop
     while (running) {
         loop(renderer);
     }
