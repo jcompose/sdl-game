@@ -5,14 +5,18 @@
 #include "input.h"
 #include <stdio.h>
 
-struct {
+typedef struct {
     int x;
     int y;
-} mouse;
+} Mouse;
 
 const float SMALLER = 0.8;
 const float LARGER = 1 / SMALLER;
-const float ASPECT_RATIO = (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT;
+const float ASPECT_RATIO = (float) SCREEN_WIDTH / SCREEN_HEIGHT;
+
+bool middle_mouse_button_pressed = false;
+Mouse current_mouse_position;
+Mouse previous_mouse_position;
 
 void handle_keydown(SDL_Event event) {
     if (event.key.keysym.sym == 'q') {
@@ -25,15 +29,15 @@ int map(int val, int i_lower, int i_upper, int o_lower, int o_upper) {
 }
 
 void handle_mousewheel(SDL_Event event, SDL_Rect * camera) {
-    // Update the literal mouse position (x: [0, w]; y: [0, h])
-    SDL_GetMouseState(&mouse.x, &mouse.y);
+    // Stored so we don't have to compare more than once
+    const bool zoom_in = (event.wheel.y > 0);
 
     // mapped_x and mapped_y represent the pixels in the BG image that were hovered over
-    const int mapped_x = map(mouse.x, 0, SCREEN_WIDTH, camera->x, camera->x + camera->w);
-    const int mapped_y = map(mouse.y, 0, SCREEN_HEIGHT, camera->y, camera->y + camera->h);
+    const int mapped_x = map(current_mouse_position.x, 0, SCREEN_WIDTH, camera->x, camera->x + camera->w);
+    const int mapped_y = map(current_mouse_position.y, 0, SCREEN_HEIGHT, camera->y, camera->y + camera->h);
 
     // Update the width and the height to the bigger / smaller values
-    const float scale_factor = (event.wheel.y > 0) ? SMALLER : LARGER;
+    const float scale_factor = (zoom_in) ? SMALLER : LARGER;
 
     // Make sure you can't zoom in too far
     // TODO this only works if W > H
@@ -56,23 +60,40 @@ void handle_mousewheel(SDL_Event event, SDL_Rect * camera) {
     if (camera->y < 0) { camera->y = 0; }
     if (camera->x > SCREEN_WIDTH - camera->w) { camera->x = (int)(SCREEN_WIDTH - camera->w); }
     if (camera->y > SCREEN_HEIGHT - camera->h) { camera->y = (int)(SCREEN_HEIGHT - camera->h); }
-
-    // BUG print statements
-    printf("----------\n");
-    printf("Camera x: %i\n", camera->x);
-    printf("Camera y: %i\n", camera->y);
-    printf("Camera w: %i\n", camera->w);
-    printf("Camera h: %i\n", camera->h);
-    printf("----------\n");
 }
 
-void handle_mousemotion(SDL_Event event) { }
+void handle_mousemotion(SDL_Event event, SDL_Rect * camera) {
+    if (middle_mouse_button_pressed) {
+        const float translation_x = (event.motion.x - previous_mouse_position.x) / 10.;
+        const float translation_y = (event.motion.y - previous_mouse_position.y) / 10.;
 
-void handle_mousebuttondown(SDL_Event event, SDL_Rect * camera) { }
+        SDL_GetMouseState(&previous_mouse_position.x, &previous_mouse_position.y);
+
+        if (camera->x + translation_x < 0 || camera->x + translation_x > SCREEN_WIDTH - camera->w) { return; }
+        if (camera->y + translation_y < 0 || camera->y + translation_y > SCREEN_HEIGHT - camera->h) { return; }
+
+        camera->x += translation_x;
+        camera->y += translation_y;
+    }
+}
+
+void handle_mousebuttondown(SDL_Event event) { 
+    if (event.button.button == SDL_BUTTON_MIDDLE) {
+        SDL_GetMouseState(&previous_mouse_position.x, &previous_mouse_position.y);
+        middle_mouse_button_pressed = true;
+    }
+}
+
+void handle_mousebuttonup(SDL_Event event) { 
+    if (event.button.button == SDL_BUTTON_MIDDLE) {
+        middle_mouse_button_pressed = false;
+    }
+}
 
 void poll_inputs(SDL_Rect * camera) {
     SDL_Event event;
 
+    SDL_GetMouseState(&current_mouse_position.x, &current_mouse_position.y);
     while (SDL_PollEvent(&event)) {
         switch (event.type) {
             case SDL_QUIT:
@@ -88,11 +109,15 @@ void poll_inputs(SDL_Rect * camera) {
                 break;
 
             case SDL_MOUSEMOTION:
-                handle_mousemotion(event);
+                handle_mousemotion(event, camera);
                 break;
 
             case SDL_MOUSEBUTTONDOWN:
-                handle_mousebuttondown(event, camera);
+                handle_mousebuttondown(event);
+                break;
+
+            case SDL_MOUSEBUTTONUP:
+                handle_mousebuttonup(event);
                 break;
 
             default:
