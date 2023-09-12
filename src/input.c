@@ -31,8 +31,12 @@ void handle_mousewheel(SDL_Event event, SDL_Rect * camera) {
     // Update the width and the height to the bigger / smaller values
     const float scale_factor = (zoom_in) ? SMALLER : LARGER;
 
+    // Used if we're zooming out
+    const float old_width = camera->w;
+    const float old_height = camera->h;
+
     // Make sure you can't zoom in / out too far
-    if (camera->h * scale_factor * (LARGER-1) < 1) { return; }
+    if (camera->h * scale_factor * (LARGER-1) < 2) { return; }
     if (camera->h * scale_factor > SCREEN_HEIGHT) { return; }
 
     // Update the Camera width and height by scale factor
@@ -43,6 +47,11 @@ void handle_mousewheel(SDL_Event event, SDL_Rect * camera) {
     if (zoom_in) {
         camera->x = (int)(mapped_x - camera->w / 2.);
         camera->y = (int)(mapped_y - camera->h / 2.);
+    }
+    // Update the camera x and y if zoom out!
+    else {
+        camera->y -= (camera->h - old_height) / 2;
+        camera->x -= (camera->w - old_width) / 2;
     }
 
     // Min and Max bounds
