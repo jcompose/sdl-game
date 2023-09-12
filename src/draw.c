@@ -1,8 +1,6 @@
-#include <SDL.h>
 #include <math.h>
+#include <SDL.h>
 #include <SDL2/SDL_image.h>
-#include "SDL_blendmode.h"
-#include "SDL_pixels.h"
 #include "SDL_rect.h"
 #include "SDL_render.h"
 #include "draw.h"

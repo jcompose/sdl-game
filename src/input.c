@@ -1,22 +1,14 @@
-#include "SDL.h"
-#include "SDL_events.h"
-#include "SDL_mouse.h"
+#include <SDL2/SDL.h>
 #include "defs.h"
 #include "input.h"
 #include <stdio.h>
-
-typedef struct {
-    int x;
-    int y;
-} Mouse;
+#include <math.h>
 
 const float SMALLER = 0.8;
 const float LARGER = 1 / SMALLER;
 const float ASPECT_RATIO = (float) SCREEN_WIDTH / SCREEN_HEIGHT;
 
 bool middle_mouse_button_pressed = false;
-Mouse current_mouse_position;
-Mouse previous_mouse_position;
 
 void handle_keydown(SDL_Event event) {
     if (event.key.keysym.sym == 'q') {
@@ -39,21 +31,19 @@ void handle_mousewheel(SDL_Event event, SDL_Rect * camera) {
     // Update the width and the height to the bigger / smaller values
     const float scale_factor = (zoom_in) ? SMALLER : LARGER;
 
-    // Make sure you can't zoom in too far
-    // TODO this only works if W > H
+    // Make sure you can't zoom in / out too far
     if (camera->h * scale_factor * (LARGER-1) < 1) { return; }
-
-    // Make sure you can't zoom in too not far
-    // TODO this only works if W > H
     if (camera->h * scale_factor > SCREEN_HEIGHT) { return; }
 
     // Update the Camera width and height by scale factor
     camera->h = (int)(camera->h * scale_factor);
-    camera->w = (int)(camera->h * ASPECT_RATIO);
+    camera->w = (int)(camera->h * ASPECT_RATIO); // This is on purpose
 
-    // Update the Camera x and y
-    camera->x = (int)(mapped_x - camera->w / 2.);
-    camera->y = (int)(mapped_y - camera->h / 2.);
+    // Update the Camera x and y if zoom in
+    if (zoom_in) {
+        camera->x = (int)(mapped_x - camera->w / 2.);
+        camera->y = (int)(mapped_y - camera->h / 2.);
+    }
 
     // Min and Max bounds
     if (camera->x < 0) { camera->x = 0; }
@@ -63,18 +53,22 @@ void handle_mousewheel(SDL_Event event, SDL_Rect * camera) {
 }
 
 void handle_mousemotion(SDL_Event event, SDL_Rect * camera) {
+    SDL_GetMouseState(&current_mouse_position.x, &current_mouse_position.y);
+
     if (middle_mouse_button_pressed) {
-        const float translation_x = (event.motion.x - previous_mouse_position.x) / 10.;
-        const float translation_y = (event.motion.y - previous_mouse_position.y) / 10.;
+        const float proportion = (float) camera->w / SCREEN_WIDTH;
 
-        SDL_GetMouseState(&previous_mouse_position.x, &previous_mouse_position.y);
+        const float translation_x = proportion * (current_mouse_position.x - previous_mouse_position.x);
+        const float translation_y = proportion * (current_mouse_position.y - previous_mouse_position.y);
 
-        if (camera->x + translation_x < 0 || camera->x + translation_x > SCREEN_WIDTH - camera->w) { return; }
-        if (camera->y + translation_y < 0 || camera->y + translation_y > SCREEN_HEIGHT - camera->h) { return; }
+        const bool move_x = !(camera->x - translation_x < 0 || camera->x - translation_x > SCREEN_WIDTH - camera->w);
+        const bool move_y = !(camera->y - translation_y < 0 || camera->y - translation_y > SCREEN_HEIGHT - camera->h);
 
-        camera->x += translation_x;
-        camera->y += translation_y;
+        camera->x -= translation_x * move_x;
+        camera->y -= translation_y * move_y;
     }
+
+    SDL_GetMouseState(&previous_mouse_position.x, &previous_mouse_position.y);
 }
 
 void handle_mousebuttondown(SDL_Event event) { 
@@ -93,11 +87,10 @@ void handle_mousebuttonup(SDL_Event event) {
 void poll_inputs(SDL_Rect * camera) {
     SDL_Event event;
 
-    SDL_GetMouseState(&current_mouse_position.x, &current_mouse_position.y);
     while (SDL_PollEvent(&event)) {
         switch (event.type) {
             case SDL_QUIT:
-                exit(0);
+                GAME_RUNNING = false;
                 break;
 
             case SDL_KEYDOWN:

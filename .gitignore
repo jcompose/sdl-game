@@ -52,5 +52,5 @@ Mkfile.old
 dkms.conf
 
 # Stuff that Jackson added for neovim development
-Game
 compile_flags.txt
+bin/Game

@@ -2,7 +2,7 @@
 
 #include "defs.h"
 
-// Basic hero facotry design
+// Basic hero factory design
 Hero * hero_factory(Hero * source);
 void hero_deconstructor(Hero * hero);
 

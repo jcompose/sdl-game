@@ -42,3 +42,12 @@ typedef struct {
     Hero * hero;
     Player_State state;
 } Player;
+
+// Mouse
+typedef struct {
+    int x;
+    int y;
+} Mouse;
+
+extern Mouse current_mouse_position;
+extern Mouse previous_mouse_position;
